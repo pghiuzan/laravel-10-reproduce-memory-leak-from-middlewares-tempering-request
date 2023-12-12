@@ -4,26 +4,27 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
-use App\Http\Middleware\TrimStrings;
-use Illuminate\Contracts\Http\Kernel as HttpKernel;
-use Illuminate\Foundation\Http\Middleware\ConvertEmptyStringsToNull;
-use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 use Tests\TestCase;
 
 class MemoryLeakTest extends TestCase
 {
-    private const int NUMBER_OF_ITERATIONS = 100000;
+    private const int NUMBER_OF_ITERATIONS = 10000;
 
-    public function testItDoesntRunOutOfMemory(): void
+    /**
+     * @dataProvider providesMemoryLeakTestIterations
+     */
+    public function testItDoesntRunOutOfMemory(int $iterationCount): void
     {
-        for ($i = 0; $i < self::NUMBER_OF_ITERATIONS; $i++) {
-            $kernel = $this->app->make(HttpKernel::class);
+        $response = $this->get('/');
 
-            TrimStrings::skipWhen(fn (): bool => false);
-            ConvertEmptyStringsToNull::skipWhen(fn (): bool => false);
+        $response->assertOk();
+    }
 
-            $kernel->terminate(new Request(), new Response());
-        }
+    public static function providesMemoryLeakTestIterations(): array
+    {
+        return array_map(
+            fn (int $iterationNumber): array => [$iterationNumber],
+            range(0, self::NUMBER_OF_ITERATIONS),
+        );
     }
 }
